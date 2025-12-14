@@ -2,7 +2,7 @@ import React from "react";
 import { format } from "date-fns";
 import type { CalendarEvent } from "../../types";
 
-interface CalendarCellProps {
+export interface CalendarCellProps {
   date: Date;
   events: CalendarEvent[];
   isToday: boolean;
