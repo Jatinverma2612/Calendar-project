@@ -5,7 +5,6 @@ export interface CalendarEvent {
   startDate: Date;
   endDate: Date;
   color?: string;
-  category?: string;
 }
 
 export interface CalendarViewProps {

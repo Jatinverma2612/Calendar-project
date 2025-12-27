@@ -1,107 +1,72 @@
-import { MonthView } from "./Components/Calendar/MonthView";
-import { CalendarHeader } from "./Components/Calendar/CalendarHeader";
+import { useEffect, useState } from "react";
 import { useCalendar } from "./Hooks/useCalendar";
+import CalendarHeader from "./Components/Calendar/CalendarHeader";
+import MonthView from "./Components/Calendar/MonthView";
+import Modal from "./Components/primitives/Modal";
+import EventForm from "./Components/Calendar/EventForm";
 import type { CalendarEvent } from "./types";
-import { Modal } from "./Components/primitives/Modal";
-import { useState, useEffect } from "react";
-import { EventForm } from "./Components/Calendar/EventForm";
 
-function App() {
-  const { currentDate, goToNextMonth, goToPreviousMonth, goToToday } =
-    useCalendar();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export default function App() {
+  const { currentDate, nextMonth, prevMonth, goToday } = useCalendar();
+
+  const [events, setEvents] = useState<CalendarEvent[]>(() => {
+    const saved = localStorage.getItem("events");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
-  const [events, setEvents] = useState<CalendarEvent[]>(() => {
-    const savedEvents = localStorage.getItem("calendarEvents");
-    return savedEvents ? JSON.parse(savedEvents) : [];
-  });
 
   useEffect(() => {
-    localStorage.setItem("calendarEvents", JSON.stringify(events));
+    localStorage.setItem("events", JSON.stringify(events));
   }, [events]);
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedEvent(null);
-    setIsModalOpen(true);
-  };
+  return (
+    <div className="min-h-screen p-8 max-w-6xl mx-auto">
+      <CalendarHeader
+        currentDate={currentDate}
+        onNext={nextMonth}
+        onPrev={prevMonth}
+        onToday={goToday}
+      />
 
-  const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setSelectedDate(new Date(event.startDate));
-    setIsModalOpen(true);
-  };
+      <MonthView
+        currentDate={currentDate}
+        events={events}
+        onDateClick={(d) => {
+          setSelectedDate(d);
+          setSelectedEvent(null);
+        }}
+        onEventClick={(e) => {
+          setSelectedEvent(e);
+          setSelectedDate(new Date(e.startDate));
+        }}
+      />
 
-  const handleSaveEvent = (eventData: Omit<CalendarEvent, "id">) => {
-    if (selectedEvent) {
-      setEvents(
-        events.map((ev) =>
-          ev.id === selectedEvent.id ? { ...ev, ...eventData } : ev
-        )
-      );
-    } else {
-      const newEvent = { ...eventData, id: Date.now().toString() };
-      setEvents([...events, newEvent]);
-    }
-    setIsModalOpen(false);
-  };
-
-  const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter((ev) => ev.id !== id)); // List me se hata do
-    setIsModalOpen(false);
-  };
-
-  const handleAddEvent = (eventData: Omit<CalendarEvent, "id">) => {
-    const newEvent: CalendarEvent = {
-      ...eventData,
-      id: Date.now().toString(),
-    };
-
-    const updatedEvents = [...events, newEvent];
-    setEvents(updatedEvents);
-
-    setEvents([...events, newEvent]);
-    localStorage.setItem("calendarEvents", JSON.stringify(updatedEvents));
-    setIsModalOpen(false);
-  };
-
- return (
-    <div className="min-h-screen bg-neutral-100 p-8">
-      <div className="max-w-6xl mx-auto h-[800px] flex flex-col gap-4">
-        <CalendarHeader 
-          currentDate={currentDate}
-          onNext={goToNextMonth}
-          onPrev={goToPreviousMonth}
-          onToday={goToToday}
-        />
-
-        <MonthView 
-          currentDate={currentDate} 
-          events={events} 
-          onDateClick={handleDateClick}
-          onEventClick={handleEventClick}
-        />
-
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title={selectedEvent ? "Edit Event" : "Add New Event"}
-        >
-          <EventForm 
-            key={selectedEvent ? selectedEvent.id : 'new'} 
+      <Modal open={!!selectedDate} onClose={() => setSelectedDate(null)}>
+        {selectedDate && (
+          <EventForm
             selectedDate={selectedDate}
-            eventToEdit={selectedEvent}
-            onSubmit={handleSaveEvent}
-            onDelete={handleDeleteEvent}
-            onCancel={() => setIsModalOpen(false)}
+            event={selectedEvent}
+            onCancel={() => setSelectedDate(null)}
+            onDelete={(id) => {
+              setEvents(events.filter((e) => e.id !== id));
+              setSelectedDate(null);
+            }}
+            onSave={(ev) => {
+              setEvents((prev) => {
+                const exists = prev.find((e) => e.id === ev.id);
+                return exists
+                  ? prev.map((e) => (e.id === ev.id ? ev : e))
+                  : [...prev, ev];
+              });
+              setSelectedDate(null);
+            }}
           />
-        </Modal>
-      </div>
+        )}
+      </Modal>
     </div>
   );
 }
-
-export default App;

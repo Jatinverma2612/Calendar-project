@@ -1,45 +1,20 @@
-import { useState, useCallback } from 'react';
-import { addMonths, subMonths } from 'date-fns'; 
-
-interface CalendarState {
-  currentDate: Date;
-  view: 'month' | 'week';
-}
+import { useState, useCallback } from "react";
+import { addMonths, subMonths } from "date-fns";
 
 export const useCalendar = () => {
-  const [state, setState] = useState<CalendarState>({
-    currentDate: new Date(),
-    view: 'month',
-  });
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-
-  const goToNextMonth = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentDate: addMonths(prev.currentDate, 1),
-    }));
+  const nextMonth = useCallback(() => {
+    setCurrentDate((d) => addMonths(d, 1));
   }, []);
 
-
-  const goToPreviousMonth = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentDate: subMonths(prev.currentDate, 1),
-    }));
+  const prevMonth = useCallback(() => {
+    setCurrentDate((d) => subMonths(d, 1));
   }, []);
 
-
-  const goToToday = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentDate: new Date(),
-    }));
+  const goToday = useCallback(() => {
+    setCurrentDate(new Date());
   }, []);
 
-  return {
-    ...state,
-    goToNextMonth,
-    goToPreviousMonth,
-    goToToday,
-  };
+  return { currentDate, nextMonth, prevMonth, goToday };
 };
